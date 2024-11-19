@@ -11,27 +11,29 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configuración de CORS
+// Configuración de orígenes permitidos
 const allowedOrigins = [
-    'http://localhost:3000', // Para desarrollo local
+    'http://localhost:3000', // Desarrollo local
     'https://inventariogestion-valenlopezzz04s-projects.vercel.app', // Producción
 ];
 
-app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('No permitido por CORS'));
-        }
-    },
-    credentials: true, // Permite cookies y encabezados personalizados
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'], // Cabeceras permitidas
-}));
+// Configuración de CORS
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin); // Permitir origen
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Métodos permitidos
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Cabeceras permitidas
+        res.header('Access-Control-Allow-Credentials', 'true'); // Permitir cookies o credenciales
+    }
 
-// Responder a solicitudes preflight
-app.options('*', cors());
+    if (req.method === 'OPTIONS') {
+        // Responder directamente a solicitudes preflight
+        return res.sendStatus(200);
+    }
+
+    next();
+});
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://<usuario>:<contraseña>@<cluster>', {
@@ -45,9 +47,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://<usuario>:<contraseña>@<
 // Middleware para parsear JSON
 app.use(express.json());
 
-// Rutas
-app.use('/auth', authRouter);
-app.use('/gestion/productos', authMiddleware, productosRouter);
+// Rutas públicas y protegidas
+app.use('/auth', authRouter); // Rutas de autenticación (públicas)
+app.use('/gestion/productos', authMiddleware, productosRouter); // Rutas protegidas
 
 // Ruta pública de prueba
 app.get('/', (req, res) => {

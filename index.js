@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3001;
 // Configurar CORS
 const allowedOrigins = [
     'http://localhost:3000', // Frontend en desarrollo local
-    'https://mi-frontend.vercel.app', // Reemplaza con la URL de tu frontend en producción
+    'inventariogestion.vercel.app', // Reemplaza con la URL de tu frontend en producción
 ];
 
 app.use(cors({

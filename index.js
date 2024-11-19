@@ -1,4 +1,4 @@
-const cors = require('cors'); // Asegúrate de importar cors
+const cors = require('cors'); // Importar cors
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -14,12 +14,12 @@ const PORT = process.env.PORT || 3001;
 // Configurar CORS
 const allowedOrigins = [
     'http://localhost:3000', // Frontend en desarrollo local
-    'inventariogestion.vercel.app', // Reemplaza con la URL de tu frontend en producción
+    'https://inventariogestion-valenlopezzz04s-projects.vercel.app', // URL exacta de tu frontend en producción
 ];
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Permite solicitudes sin origen (por ejemplo, desde herramientas como Postman)
+        // Permitir solicitudes sin origen (por ejemplo, desde herramientas como Postman)
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -28,6 +28,9 @@ app.use(cors({
     },
     credentials: true, // Permitir cookies o headers personalizados
 }));
+
+// Responder a solicitudes OPTIONS para preflight
+app.options('*', cors());
 
 // Conexión a MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://valejalopez444:valentina@gestioninventario.o72zu.mongodb.net/?retryWrites=true&w=majority&appName=GestionInventario', { 

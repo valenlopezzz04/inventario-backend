@@ -1,15 +1,15 @@
-pipeline {
+﻿pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = 'github-credentials' // ID de las credenciales configuradas en Jenkins
-        DOCKERHUB_USER = 'valenlopezzz04'           // Tu usuario de Docker Hub
-        IMAGE_NAME = 'inventario-backend-imagen'    // Nombre de la imagen en español
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // ID de las credenciales configuradas en Jenkins
+        DOCKERHUB_USER = 'valenlopezzz04'               // Tu usuario de Docker Hub
+        IMAGE_NAME = 'inventario-backend-imagen'        // Nombre de la imagen en español
     }
     stages {
         stage('Clonar Repositorio') {
             steps {
                 git branch: 'development',
-                    credentialsId: 'github-credentials', // Credenciales para GitHub
+                    credentialsId: 'github-credentials', // Credenciales configuradas en Jenkins para GitHub
                     url: 'https://github.com/valenlopezzz04/inventario-backend.git'
             }
         }

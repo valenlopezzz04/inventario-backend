@@ -13,14 +13,18 @@ const PORT = process.env.PORT || 3001;
 
 // Configuración de orígenes permitidos
 const allowedOrigins = [
-    'http://localhost:3000', // Desarrollo local
-    'https://inventariogestion-valenlopezzz04s-projects.vercel.app', // Producción
+    'http://localhost:3000', // Para desarrollo local
+    'https://inventariogestion-valenlopezzz04s-projects.vercel.app', // Dominio explícito
 ];
 
-// Middleware de CORS con ajustes para solicitudes sin origen
+// Middleware de CORS para manejar orígenes dinámicos
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (
+            !origin || // Permitir solicitudes sin origen (como Postman)
+            allowedOrigins.includes(origin) || // Orígenes explícitamente permitidos
+            origin.endsWith('.vercel.app') // Cualquier subdominio de Vercel
+        ) {
             console.log(`Solicitud permitida: Origen: ${origin || 'sin origen (Postman o similares)'}`);
             callback(null, true);
         } else {
@@ -29,7 +33,7 @@ app.use(cors({
         }
     },
     credentials: true, // Permitir cookies y encabezados personalizados
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos HTTP permitidos
     allowedHeaders: ['Content-Type', 'Authorization'], // Cabeceras permitidas
 }));
 

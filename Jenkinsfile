@@ -6,25 +6,16 @@ pipeline {
         IMAGE_NAME = 'inventario-backend-imagen'
     }
     stages {
-        stage('Clonar Repositorio') {
-            steps {
-                git branch: 'development',
-                    credentialsId: 'github-credentials',
-                    url: 'https://github.com/valenlopezzz04/inventario-backend.git'
-            }
-        }
         stage('Instalar Dependencias') {
             steps {
                 script {
-                    // Instalar dependencias del proyecto
                     sh 'npm install'
                 }
             }
         }
-        stage('Pruebas') {
+        stage('Ejecutar Pruebas') {
             steps {
                 script {
-                    // Ejecutar pruebas definidas en el proyecto
                     sh 'npm test'
                 }
             }
@@ -32,7 +23,6 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    // Construir la imagen de Docker
                     sh 'docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:latest .'
                 }
             }
@@ -40,7 +30,6 @@ pipeline {
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    // Usar Trivy para escanear la imagen de Docker
                     sh 'trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
                 }
             }
@@ -50,7 +39,7 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                        sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
+                        sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
                     }
                 }
             }
@@ -61,10 +50,10 @@ pipeline {
             echo 'Pipeline finalizado.'
         }
         success {
-            echo 'Pipeline ejecutado exitosamente.'
+            echo 'Pipeline ejecutado con éxito.'
         }
         failure {
-            echo 'Pipeline falló. Revisa los logs para más detalles.'
+            echo 'Pipeline falló. Revisa los errores.'
         }
     }
 }

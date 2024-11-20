@@ -1,50 +1,46 @@
 pipeline {
     agent any
+    environment {
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
+        DOCKERHUB_USER = 'valenlopezzz04'
+        IMAGE_NAME = 'inventario-backend-imagen'
+    }
     stages {
-        stage('Clonar Repositorio') {
+        stage('Instalar Dependencias') {
             steps {
-                git branch: 'development',
-                    credentialsId: 'github-credentials',
-                    url: 'https://github.com/valenlopezzz04/inventario-backend.git'
+                script {
+                    sh 'npm install'
+                }
             }
         }
-        stage('Compilar') {
+        stage('Ejecutar Pruebas') {
             steps {
-                echo 'Validando que el componente compila correctamente...'
-                sh './gradlew build' // Usa el comando apropiado para compilar tu proyecto
-            }
-        }
-        stage('Pruebas') {
-            steps {
-                echo 'Ejecutando pruebas de integración...'
-                sh './gradlew test' // Usa el comando que ejecuta tus pruebas
-            }
-        }
-        stage('Análisis de Calidad con SonarQube') {
-            steps {
-                echo 'Analizando la calidad del código...'
-                // Aquí deberás integrar SonarQube con Jenkins
+                script {
+                    sh 'npm test'
+                }
             }
         }
         stage('Construir Imagen Docker') {
             steps {
-                echo 'Construyendo la imagen Docker...'
-                sh 'docker build -t valenlopezzz04/inventario-backend-imagen:latest .'
+                script {
+                    sh 'docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:latest .'
+                }
             }
         }
-        stage('Escanear Vulnerabilidades') {
+        stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
-                echo 'Escaneando la imagen con Trivy...'
-                sh 'trivy image --severity HIGH,CRITICAL valenlopezzz04/inventario-backend-imagen:latest'
+                script {
+                    sh 'trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                }
             }
         }
-        stage('Subir Imagen a DockerHub') {
+        stage('Publicar Imagen en Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push valenlopezzz04/inventario-backend-imagen:latest
-                    '''
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                        sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                    }
                 }
             }
         }
@@ -54,10 +50,10 @@ pipeline {
             echo 'Pipeline finalizado.'
         }
         success {
-            echo 'Pipeline ejecutado exitosamente.'
+            echo 'Pipeline ejecutado con éxito.'
         }
         failure {
-            echo 'Pipeline fallido. Revisa los errores.'
+            echo 'Pipeline falló. Revisa los errores.'
         }
     }
 }

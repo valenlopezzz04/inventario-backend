@@ -13,23 +13,28 @@ const PORT = process.env.PORT || 3001;
 
 // Configuración de orígenes permitidos
 const allowedOrigins = [
-    'http://localhost:3000', // Desarrollo local
-    'https://inventariogestion-valenlopezzz04s-projects.vercel.app', // Producción
+    'http://localhost:3000', // Para desarrollo local
+    'https://inventariogestion-valenlopezzz04s-projects.vercel.app', // Para producción
 ];
 
-// Configuración de CORS
+// Middleware de CORS con logs
 app.use((req, res, next) => {
+    console.log(`Solicitud entrante: ${req.method} - Ruta: ${req.path} - Origen: ${req.headers.origin}`);
     const origin = req.headers.origin;
+
     if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin); // Permitir origen
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Métodos permitidos
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Cabeceras permitidas
-        res.header('Access-Control-Allow-Credentials', 'true'); // Permitir cookies o credenciales
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        console.log('CORS configurado correctamente para este origen.');
+    } else {
+        console.log(`Origen no permitido: ${origin}`);
     }
 
     if (req.method === 'OPTIONS') {
-        // Responder directamente a solicitudes preflight
-        return res.sendStatus(200);
+        console.log('Solicitud preflight detectada.');
+        return res.sendStatus(200); // Respuesta para solicitudes preflight
     }
 
     next();
@@ -47,7 +52,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://<usuario>:<contraseña>@<
 // Middleware para parsear JSON
 app.use(express.json());
 
-// Rutas públicas y protegidas
+// Rutas
 app.use('/auth', authRouter); // Rutas de autenticación (públicas)
 app.use('/gestion/productos', authMiddleware, productosRouter); // Rutas protegidas
 
@@ -58,7 +63,7 @@ app.get('/', (req, res) => {
 
 // Middleware global de manejo de errores
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error detectado:', err.stack);
     res.status(500).json({ message: 'Error interno del servidor' });
 });
 

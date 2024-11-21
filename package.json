@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "coverage": "nyc npm test"
+    "test": "jest --coverage",
+    "coverage": "jest --coverage --coverageThreshold '{\"global\":{\"branches\":90,\"functions\":90,\"lines\":90,\"statements\":90}}'"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +22,8 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nyc": "^17.1.0"
+    "nyc": "^17.1.0",
+    "supertest": "^7.0.0"
   },
   "nyc": {
     "all": true,
@@ -37,6 +38,18 @@
     "check-coverage": true,
     "lines": 90,
     "functions": 90,
-    "branches": 90
+    "branches": 90,
+    "statements": 90
+  },
+  "jest": {
+    "collectCoverage": true,
+    "coverageThreshold": {
+      "global": {
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      }
+    }
   }
 }

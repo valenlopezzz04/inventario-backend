@@ -30,80 +30,68 @@ const verificarAdmin = (req, res, next) => {
     next();
 };
 
-// Registro de usuario (sin hashing)
-router.post('/register', [
-    body('nombre').isString().notEmpty().withMessage('El nombre es obligatorio.'),
-    body('email').isEmail().withMessage('Debe ser un email válido.'),
-    body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres.'),
-    body('role').optional().isIn(['admin', 'standard']).withMessage('Rol inválido.')
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+// Ruta protegida para administradores
+router.get('/admin', verificarToken, verificarAdmin, (req, res) => {
+    res.status(200).json({ message: 'Acceso concedido a administrador.' });
+});
 
-    const { nombre, email, password, role } = req.body;
-    try {
-        const usuarioExistente = await Usuario.findOne({ email });
-        if (usuarioExistente) {
-            return res.status(400).json({ message: 'El usuario ya existe.' });
+// Registro de usuario
+router.post(
+    '/register',
+    [
+        body('nombre').isString().notEmpty().withMessage('El nombre es obligatorio.'),
+        body('email').isEmail().withMessage('Debe ser un email válido.'),
+        body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres.'),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        const usuario = new Usuario({ nombre, email, password, role: role || 'standard' });
-        await usuario.save();
+        const { nombre, email, password, role } = req.body;
+        try {
+            const usuarioExistente = await Usuario.findOne({ email });
+            if (usuarioExistente) {
+                return res.status(400).json({ message: 'El usuario ya existe.' });
+            }
 
-        res.status(201).json({ message: 'Usuario registrado con éxito.' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+            const usuario = new Usuario({ nombre, email, password, role: role || 'standard' });
+            await usuario.save();
+
+            res.status(201).json({ message: 'Usuario registrado con éxito.' });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
     }
-});
+);
 
-// Inicio de sesión (sin hashing)
-router.post('/login', [
-    body('email').isEmail().withMessage('Debe ser un email válido.'),
-    body('password').exists().withMessage('La contraseña es obligatoria.')
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password } = req.body;
-    try {
-        const usuario = await Usuario.findOne({ email });
-        if (!usuario) {
-            return res.status(400).json({ message: 'Credenciales incorrectas.' });
+// Inicio de sesión
+router.post(
+    '/login',
+    [
+        body('email').isEmail().withMessage('Debe ser un email válido.'),
+        body('password').exists().withMessage('La contraseña es obligatoria.'),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        if (usuario.password !== password) {
-            return res.status(400).json({ message: 'Credenciales incorrectas.' });
+        const { email, password } = req.body;
+        try {
+            const usuario = await Usuario.findOne({ email });
+            if (!usuario || usuario.password !== password) {
+                return res.status(400).json({ message: 'Credenciales incorrectas.' });
+            }
+
+            const token = jwt.sign({ id: usuario._id, role: usuario.role }, JWT_SECRET, { expiresIn: '1h' });
+            res.json({ token });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
         }
-
-        const token = jwt.sign({ userId: usuario._id, role: usuario.role }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
     }
-});
-
-// Endpoint para obtener la lista de usuarios
-router.get('/usuarios', verificarToken, verificarAdmin, async (req, res) => {
-    try {
-        const usuarios = await Usuario.find({}, 'nombre email role'); // Campos que deseas enviar
-        res.json(usuarios);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// Endpoint para eliminar usuario
-router.delete('/usuarios/:id', verificarToken, verificarAdmin, async (req, res) => {
-    try {
-        await Usuario.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: 'Usuario eliminado con éxito.' });
-    } catch (error) {
-        res.status(500).json({ message: 'Hubo un error al eliminar el usuario.' });
-    }
-});
+);
 
 module.exports = router;

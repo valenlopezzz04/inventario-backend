@@ -13,66 +13,59 @@ const PORT = process.env.PORT || 3001;
 
 // Configuración de orígenes permitidos
 const allowedOrigins = [
-    'http://localhost:3000', // Para desarrollo local
-    'https://inventariogestion-valenlopezzz04s-projects.vercel.app', // Dominio explícito
+    'http://localhost:3000',
+    'https://inventariogestion-valenlopezzz04s-projects.vercel.app',
 ];
 
-// Middleware de CORS para manejar orígenes dinámicos
+// Middleware de CORS
 app.use(cors({
     origin: (origin, callback) => {
-        if (
-            !origin || // Permitir solicitudes sin origen (como Postman)
-            allowedOrigins.includes(origin) || // Orígenes explícitamente permitidos
-            origin.endsWith('.vercel.app') // Cualquier subdominio de Vercel
-        ) {
-            console.log(`Solicitud permitida: Origen: ${origin || 'sin origen (Postman o similares)'}`);
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            console.log(`Solicitud bloqueada: Origen: ${origin}`);
             callback(new Error('No permitido por CORS'));
         }
     },
-    credentials: true, // Permitir cookies y encabezados personalizados
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos HTTP permitidos
-    allowedHeaders: ['Content-Type', 'Authorization'], // Cabeceras permitidas
+    credentials: true,
 }));
 
-// Middleware para solicitudes preflight
-app.options('*', (req, res) => {
-    console.log('Solicitud preflight detectada.');
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.sendStatus(200);
-});
-
 // Conexión a MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://<usuario>:<contraseña>@<cluster>', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-    .then(() => console.log("Conectado a MongoDB"))
-    .catch((error) => console.error("Error conectando a MongoDB:", error));
+if (process.env.NODE_ENV !== 'test') {
+    mongoose.connect(process.env.MONGODB_URI || 'mongodb://<usuario>:<contraseña>@<cluster>', {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+        .then(() => console.log("Conectado a MongoDB"))
+        .catch((error) => console.error("Error conectando a MongoDB:", error));
+}
 
 // Middleware para parsear JSON
 app.use(express.json());
 
 // Rutas
-app.use('/auth', authRouter); // Rutas de autenticación
-app.use('/gestion/productos', authMiddleware, productosRouter); // Rutas protegidas
+app.use('/auth', authRouter);
+app.use('/gestion/productos', authMiddleware, productosRouter);
 
-// Ruta pública de prueba
+// Ruta pública
 app.get('/', (req, res) => {
     res.send('Servidor funcionando correctamente');
 });
 
 // Middleware global de manejo de errores
 app.use((err, req, res, next) => {
-    console.error('Error detectado:', err.stack);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    if (err.message === 'No permitido por CORS') {
+        return res.status(403).json({ message: 'No permitido por CORS' });
+    }
+    console.error('Error detectado:', err.message);
+    res.status(err.status || 500).json({ message: err.message || 'Error interno del servidor' });
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
+

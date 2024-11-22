@@ -14,14 +14,16 @@ pipeline {
         stage('Instalar Dependencias') {
             steps {
                 script {
-                    sh 'npm install'
+                    // Ejecutar el comando npm install en Windows
+                    bat 'npm install'
                 }
             }
         }
         stage('Validar que el componente compila') {
             steps {
                 script {
-                    sh 'npm run build' // Asegúrate de que tengas un script build en tu package.json
+                    // Asegúrate de tener un script build en tu package.json
+                    bat 'npm run build'
                 }
             }
         }
@@ -31,7 +33,7 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: 'coverage/lcov-report', // Ruta al directorio del reporte
+                    reportDir: 'coverage\\lcov-report', // Usa rutas de Windows con \\ 
                     reportFiles: 'index.html', // Archivo HTML que se muestra
                     reportName: 'Cobertura de Código'
                 ])
@@ -40,37 +42,5 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    sh 'docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:latest .'
-                }
-            }
-        }
-        stage('Escanear Vulnerabilidades (Trivy)') {
-            steps {
-                script {
-                    sh 'trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
-                }
-            }
-        }
-        stage('Publicar Imagen en Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                        sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
-                    }
-                }
-            }
-        }
-    }
-    post {
-        always {
-            echo 'Pipeline finalizado. Revisa el reporte y los logs.'
-        }
-        success {
-            echo 'Pipeline ejecutado con éxito.'
-        }
-        failure {
-            echo 'Pipeline falló. Revisa los errores.'
-        }
-    }
-}
+                    // Construir la imagen Docker
+                    bat 'docker build -t %DOCKERHUB_USER%

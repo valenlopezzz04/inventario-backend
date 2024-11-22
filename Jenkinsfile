@@ -1,6 +1,7 @@
 pipeline {
     agent any
     environment {
+        DOCKERHUB_USER = 'valenlopezzz04'
         IMAGE_NAME = 'inventario-jenkins-imagen'
     }
     stages {
@@ -26,15 +27,16 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    bat "docker build -t ${env.IMAGE_NAME}:latest ."
+                    bat "docker build -t %IMAGE_NAME%:latest ."
                 }
             }
         }
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
+                    // Montamos el socket de Docker para Trivy
                     bat """
-                    docker run --rm aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress ${env.IMAGE_NAME}:latest
+                    docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %IMAGE_NAME%:latest
                     """
                 }
             }
@@ -52,5 +54,6 @@ pipeline {
         }
     }
 }
+
 
 

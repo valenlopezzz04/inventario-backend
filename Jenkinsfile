@@ -50,8 +50,11 @@ pipeline {
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    // Ejecutar Trivy para escanear vulnerabilidades
-                    bat "trivy image %DOCKERHUB_USER%/%IMAGE_NAME%:latest"
+                    // Usar Trivy como un contenedor Docker para escanear vulnerabilidades
+                    bat """
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:latest image %DOCKERHUB_USER%/%IMAGE_NAME%:latest
+                    """
                 }
             }
         }

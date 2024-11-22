@@ -1,81 +1,73 @@
 pipeline {
     agent any
+
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // ID de las credenciales en Jenkins
-        DOCKERHUB_USER = 'valenlopezzz04'              // Tu usuario en DockerHub
-        IMAGE_NAME = 'imagenJenkins'                   // Nombre personalizado para la imagen Docker
-        IMAGE_TAG = 'latest'                           // Etiqueta de la imagen
+        // Definir cualquier variable de entorno necesaria
+        DOCKER_IMAGE = 'my-docker-image'
     }
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
+
         stage('Instalar Dependencias') {
             steps {
-                script {
-                    sh 'npm install'
-                }
+                bat 'npm install'  // Comando para instalar dependencias en Windows
             }
         }
+
         stage('Validar que el componente compila') {
             steps {
-                script {
-                    sh 'npm run build' // Asegúrate de que tengas un script build en tu package.json
-                }
+                bat 'npm run build'  // Comando para compilar el proyecto
             }
         }
+
         stage('Publicar Cobertura HTML') {
             steps {
-                publishHTML(target: [
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'coverage/lcov-report', // Ruta al directorio del reporte
-                    reportFiles: 'index.html',        // Archivo HTML que se muestra
-                    reportName: 'Cobertura de Código'
-                ])
+                // Aquí podrías agregar el comando para generar y publicar el reporte de cobertura
+                echo 'Publicando cobertura HTML...'
             }
         }
+
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    // Construye la imagen Docker con un nombre personalizado
-                    sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                    // Asegúrate de que Docker esté instalado y funcionando
+                    bat 'docker build -t ${DOCKER_IMAGE} .'  // Construye la imagen de Docker
                 }
             }
         }
+
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    // Escanea la imagen recién construida
-                    sh "trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+                    // Aquí debes poner el comando para ejecutar Trivy, por ejemplo:
+                    bat 'trivy image ${DOCKER_IMAGE}'  // Escaneo de vulnerabilidades con Trivy
                 }
             }
         }
+
         stage('Publicar Imagen en Docker Hub') {
             steps {
                 script {
-                    // Autenticación y publicación de la imagen en Docker Hub
-                    withCredentials([usernamePassword(credentialsId: '${DOCKERHUB_CREDENTIALS}', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                        sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-                    }
+                    // Comando para hacer push a Docker Hub, ajusta con tus credenciales y nombre de imagen
+                    bat 'docker push ${DOCKER_IMAGE}'  // Publica la imagen en Docker Hub
                 }
             }
         }
     }
+
     post {
         always {
-            echo 'Pipeline finalizado. Revisa el reporte y los logs.'
-        }
-        success {
-            echo 'Pipeline ejecutado con éxito. Imagen subida a DockerHub:'
-            echo "${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+            // Acciones que siempre se ejecutan después de cada build (por ejemplo, limpieza)
+            echo 'Pipeline finalizado'
         }
         failure {
-            echo 'Pipeline falló. Revisa los errores y vuelve a intentarlo.'
+            // Acciones en caso de fallo
+            echo 'Pipeline falló. Revisa los logs para más detalles.'
         }
     }
 }

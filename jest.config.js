@@ -1,12 +1,21 @@
 module.exports = {
     collectCoverage: true,
     collectCoverageFrom: [
-        "**/*.js", // Incluye todos los archivos .js
-        "!**/coverage/**", // Excluye el directorio coverage
-        "!**/node_modules/**", // Excluye node_modules
-        "!testconnection.js", // Excluye testconnection.js
-        "!jest.config.js" // Excluye el archivo de configuración de Jest
+        "**/*.js", // Incluye todos los archivos .js del proyecto
+        "!**/node_modules/**",
+        "!**/coverage/**",
+        "!jest.config.js",
+        "!**/testconfig/**",
+        "!testconnection.js"
     ],
     coverageDirectory: "coverage",
+    coverageReporters: ["json", "lcov", "text", "clover"],
     testEnvironment: "node",
+    testPathIgnorePatterns: [
+        "/node_modules/",
+        "/coverage/",
+        "/testconfig/",
+        "/testconnection/",
+        "!testconnection.js"
+    ],
 };

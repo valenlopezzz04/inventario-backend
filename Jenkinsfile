@@ -13,8 +13,8 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: 'coverage',
-                    reportFiles: 'index.html',
+                    reportDir: 'coverage/lcov-report', // Ruta a tu carpeta específica
+                    reportFiles: 'index.html', // El archivo HTML que se mostrará
                     reportName: 'Cobertura de Código'
                 ])
             }
@@ -26,7 +26,6 @@ pipeline {
         }
     }
 }
-
 
 
 

@@ -1,20 +1,15 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
-        DOCKERHUB_USER = 'valenlopezzz04'
-        IMAGE_NAME = 'inventario-backend-imagen'
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // ID de las credenciales en Jenkins
+        DOCKERHUB_USER = 'valenlopezzz04'              // Tu usuario en DockerHub
+        IMAGE_NAME = 'imagenJenkins'                   // Nombre personalizado para la imagen Docker
+        IMAGE_TAG = 'latest'                           // Etiqueta de la imagen
     }
     stages {
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/main']], // Reemplaza 'main' con tu rama
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/valenlopezzz04/inventario-backend.git',
-                        credentialsId: 'github-credentials-id' // Usa el ID de las credenciales
-                    ]]
-                ])
+                checkout scm
             }
         }
         stage('Instalar Dependencias') {
@@ -27,7 +22,7 @@ pipeline {
         stage('Validar que el componente compila') {
             steps {
                 script {
-                    sh 'npm run build'
+                    sh 'npm run build' // Asegúrate de que tengas un script build en tu package.json
                 }
             }
         }
@@ -37,8 +32,8 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: 'coverage/lcov-report',
-                    reportFiles: 'index.html',
+                    reportDir: 'coverage/lcov-report', // Ruta al directorio del reporte
+                    reportFiles: 'index.html',        // Archivo HTML que se muestra
                     reportName: 'Cobertura de Código'
                 ])
             }
@@ -46,23 +41,26 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    sh 'docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:latest .'
+                    // Construye la imagen Docker con un nombre personalizado
+                    sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
         }
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    sh 'trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                    // Escanea la imagen recién construida
+                    sh "trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
         }
         stage('Publicar Imagen en Docker Hub') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    // Autenticación y publicación de la imagen en Docker Hub
+                    withCredentials([usernamePassword(credentialsId: '${DOCKERHUB_CREDENTIALS}', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                        sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                        sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
                     }
                 }
             }
@@ -73,10 +71,11 @@ pipeline {
             echo 'Pipeline finalizado. Revisa el reporte y los logs.'
         }
         success {
-            echo 'Pipeline ejecutado con éxito.'
+            echo 'Pipeline ejecutado con éxito. Imagen subida a DockerHub:'
+            echo "${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
         }
         failure {
-            echo 'Pipeline falló. Revisa los errores.'
+            echo 'Pipeline falló. Revisa los errores y vuelve a intentarlo.'
         }
     }
 }

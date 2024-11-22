@@ -48,29 +48,9 @@ pipeline {
             steps {
                 script {
                     bat """
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:latest image --format json -o trivy-report.json %DOCKERHUB_USER%/%IMAGE_NAME%:latest
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:latest image --format table %DOCKERHUB_USER%/%IMAGE_NAME%:latest
+                    docker run --rm aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %DOCKERHUB_USER%/%IMAGE_NAME%:latest
                     """
                 }
-            }
-        }
-        stage('Procesar Reporte de Vulnerabilidades') {
-            steps {
-                script {
-                    bat """
-                    python -c "import json; from pprint import pprint; print('<html><body><h1>Reporte de Vulnerabilidades</h1><pre>'); pprint(json.load(open('trivy-report.json'))); print('</pre></body></html>')" > trivy-report.html
-                    """
-                }
-                publishHTML(target: [
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: 'trivy-report.html',
-                    reportName: 'Reporte de Vulnerabilidades'
-                ])
             }
         }
         stage('Publicar Imagen en Docker Hub') {
@@ -98,3 +78,4 @@ pipeline {
         }
     }
 }
+

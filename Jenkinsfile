@@ -1,73 +1,76 @@
 pipeline {
     agent any
-
     environment {
-        // Definir cualquier variable de entorno necesaria
-        DOCKER_IMAGE = 'my-docker-image'
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
+        DOCKERHUB_USER = 'valenlopezzz04'
+        IMAGE_NAME = 'inventario-jenkins-imagen'
     }
-
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-
         stage('Instalar Dependencias') {
             steps {
-                bat 'npm install'  // Comando para instalar dependencias en Windows
+                script {
+                    sh 'npm install'
+                }
             }
         }
-
         stage('Validar que el componente compila') {
             steps {
-                bat 'npm run build'  // Comando para compilar el proyecto
+                script {
+                    sh 'npm run build' // Asegúrate de que tengas un script build en tu package.json
+                }
             }
         }
-
         stage('Publicar Cobertura HTML') {
             steps {
-                // Aquí podrías agregar el comando para generar y publicar el reporte de cobertura
-                echo 'Publicando cobertura HTML...'
+                publishHTML(target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'coverage/lcov-report', // Ruta al directorio del reporte
+                    reportFiles: 'index.html', // Archivo HTML que se muestra
+                    reportName: 'Cobertura de Código'
+                ])
             }
         }
-
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    // Asegúrate de que Docker esté instalado y funcionando
-                    bat 'docker build -t ${DOCKER_IMAGE} .'  // Construye la imagen de Docker
+                    sh 'docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:latest .'
                 }
             }
         }
-
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    // Aquí debes poner el comando para ejecutar Trivy, por ejemplo:
-                    bat 'trivy image ${DOCKER_IMAGE}'  // Escaneo de vulnerabilidades con Trivy
+                    sh 'trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
                 }
             }
         }
-
         stage('Publicar Imagen en Docker Hub') {
             steps {
                 script {
-                    // Comando para hacer push a Docker Hub, ajusta con tus credenciales y nombre de imagen
-                    bat 'docker push ${DOCKER_IMAGE}'  // Publica la imagen en Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                        sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                    }
                 }
             }
         }
     }
-
     post {
         always {
-            // Acciones que siempre se ejecutan después de cada build (por ejemplo, limpieza)
-            echo 'Pipeline finalizado'
+            echo 'Pipeline finalizado. Revisa el reporte y los logs.'
+        }
+        success {
+            echo 'Pipeline ejecutado con éxito.'
         }
         failure {
-            // Acciones en caso de fallo
-            echo 'Pipeline falló. Revisa los logs para más detalles.'
+            echo 'Pipeline falló. Revisa los errores.'
         }
     }
 }

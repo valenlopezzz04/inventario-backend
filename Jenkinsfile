@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
     environment {
@@ -34,10 +35,10 @@ pipeline {
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    // Forzar UTF-8 en la salida para evitar caracteres extraños
+                    // Escanear y guardar el reporte en un archivo de texto
                     bat """
                     chcp 65001 > nul
-                    docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %IMAGE_NAME%:latest
+                    docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %IMAGE_NAME%:latest > vulnerabilities-report.txt
                     """
                 }
             }
@@ -45,13 +46,15 @@ pipeline {
     }
     post {
         always {
-            echo 'Pipeline finalizado. Revisa el reporte y los logs.'
+            // Archivar el reporte en el workspace para referencia futura
+            archiveArtifacts artifacts: 'vulnerabilities-report.txt', fingerprint: true
+            echo 'Pipeline finalizado. Revisa el reporte en vulnerabilities-report.txt en el workspace.'
         }
         success {
             echo 'Pipeline ejecutado con éxito.'
         }
         failure {
-            echo 'Pipeline falló. Revisa los errores.'
+            echo 'Pipeline falló. Revisa los errores y el reporte de vulnerabilidades.'
         }
     }
 }

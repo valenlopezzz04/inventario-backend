@@ -43,4 +43,41 @@ pipeline {
             steps {
                 script {
                     // Construir la imagen Docker
-                    bat 'docker build -t %DOCKERHUB_USER%
+                    bat "docker build -t %DOCKERHUB_USER%/%IMAGE_NAME%:latest ."
+                }
+            }
+        }
+        stage('Escanear Vulnerabilidades (Trivy)') {
+            steps {
+                script {
+                    // Ejecutar Trivy para escanear vulnerabilidades
+                    bat "trivy image %DOCKERHUB_USER%/%IMAGE_NAME%:latest"
+                }
+            }
+        }
+        stage('Publicar Imagen en Docker Hub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        // Autenticación en Docker Hub y push de la imagen
+                        bat """
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        docker push %DOCKERHUB_USER%/%IMAGE_NAME%:latest
+                        """
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Pipeline finalizado. Revisa el reporte y los logs.'
+        }
+        success {
+            echo 'Pipeline ejecutado con éxito.'
+        }
+        failure {
+            echo 'Pipeline falló. Revisa los errores.'
+        }
+    }
+}

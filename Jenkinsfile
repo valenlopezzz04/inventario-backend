@@ -18,8 +18,8 @@ pipeline {
             steps {
                 script {
                     echo 'Generando reporte de cobertura...'
-                    // Genera solo el reporte de cobertura usando tu jest.config.js
-                    sh 'jest --config jest.config.js --coverage --coverage-only'
+                    // Usar npx para ejecutar jest desde las dependencias locales
+                    sh 'npx jest --config jest.config.js --coverage --coverage-only'
                 }
             }
         }
@@ -76,4 +76,5 @@ pipeline {
         }
     }
 }
+
 

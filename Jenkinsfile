@@ -31,6 +31,22 @@ pipeline {
                 }
             }
         }
+        stage('Análisis con SonarQube') {
+    steps {
+        script {
+            withSonarQubeEnv('SonarQube') { // El nombre debe coincidir con el configurado en Jenkins
+                bat """
+                sonar-scanner \
+                -Dsonar.projectKey=nombre-proyecto \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=http://localhost:9000 \
+                -Dsonar.login=tu-token-aqui
+                """
+            }
+        }
+    }
+}
+
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {

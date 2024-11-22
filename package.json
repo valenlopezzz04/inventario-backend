@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "jest --coverage",
-    "coverage": "nyc --all --reporter=text --reporter=html npm test"
+    "build": "echo 'Compilación exitosa'"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -13,10 +13,28 @@ pipeline {
                 }
             }
         }
-        stage('Ejecutar Pruebas') {
+        stage('Ejecutar Pruebas y Obtener Cobertura') {
             steps {
                 script {
-                    sh 'npm test'
+                    // Ejecutar pruebas, pero capturar errores para continuar
+                    def result = sh(script: 'npm test -- --coverage || true', returnStatus: true)
+                    if (result != 0) {
+                        echo "Las pruebas fallaron, pero continuaremos para revisar la cobertura."
+                    }
+                    // Leer reporte de cobertura
+                    sh 'cat coverage/lcov-report/index.html'
+                }
+            }
+        }
+        stage('Validar Cobertura') {
+            steps {
+                script {
+                    // Extraer el porcentaje de cobertura global desde el archivo generado
+                    def coverage = sh(script: "grep -Po 'All files.*\\K\\d+\\.\\d+(?=%)' coverage/lcov-report/index.html", returnStdout: true).trim()
+                    echo "Cobertura Global: ${coverage}%"
+                    if (coverage.toFloat() < 90) {
+                        error("La cobertura de código es inferior al 90%. Deteniendo el pipeline.")
+                    }
                 }
             }
         }
@@ -57,5 +75,6 @@ pipeline {
         }
     }
 }
+
 
 

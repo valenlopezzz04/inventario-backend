@@ -55,9 +55,3 @@ pipeline {
         }
     }
 }
-
-        failure {
-            echo 'Pipeline falló. Revisa los errores.'
-        
-    }
-}

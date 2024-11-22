@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
     environment {
@@ -43,12 +42,24 @@ pipeline {
                 }
             }
         }
+        stage('Publicar Cobertura HTML') {
+            steps {
+                publishHTML(target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'coverage/lcov-report', // Ruta al directorio del reporte
+                    reportFiles: 'index.html', // Archivo HTML que se muestra
+                    reportName: 'Cobertura de Código'
+                ])
+            }
+        }
     }
     post {
         always {
-            // Archivar el reporte en el workspace para referencia futura
+            // Archivar el reporte de vulnerabilidades
             archiveArtifacts artifacts: 'vulnerabilities-report.txt', fingerprint: true
-            echo 'Pipeline finalizado. Revisa el reporte en vulnerabilities-report.txt en el workspace.'
+            echo 'Pipeline finalizado. Revisa el reporte de vulnerabilidades y cobertura en el workspace.'
         }
         success {
             echo 'Pipeline ejecutado con éxito.'
@@ -58,3 +69,4 @@ pipeline {
         }
     }
 }
+

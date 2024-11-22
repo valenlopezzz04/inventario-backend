@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1732250159376" clover="3.2.0">
-  <project timestamp="1732250159376" name="All files">
+<coverage generated="1732250693341" clover="3.2.0">
+  <project timestamp="1732250693341" name="All files">
     <metrics statements="162" coveredstatements="152" conditionals="55" coveredconditionals="51" methods="21" coveredmethods="19" elements="238" coveredelements="222" complexity="0" loc="162" ncloc="162" packages="4" files="6" classes="6"/>
     <package name="inventario-backend">
       <metrics statements="48" coveredstatements="44" conditionals="23" coveredconditionals="20" methods="9" coveredmethods="7"/>

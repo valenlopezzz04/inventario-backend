@@ -9,27 +9,25 @@ pipeline {
         stage('Instalar Dependencias') {
             steps {
                 script {
+                    echo 'Instalando dependencias...'
                     sh 'npm install'
                 }
             }
         }
-        stage('Ejecutar Pruebas y Obtener Cobertura') {
+        stage('Generar Reporte de Cobertura') {
             steps {
                 script {
-                    // Ejecutar pruebas, pero capturar errores para continuar
-                    def result = sh(script: 'npm test -- --coverage || true', returnStatus: true)
-                    if (result != 0) {
-                        echo "Las pruebas fallaron, pero continuaremos para revisar la cobertura."
-                    }
-                    // Leer reporte de cobertura
-                    sh 'cat coverage/lcov-report/index.html'
+                    echo 'Generando reporte de cobertura...'
+                    // Genera solo el reporte de cobertura usando tu jest.config.js
+                    sh 'jest --config jest.config.js --coverage --coverage-only'
                 }
             }
         }
         stage('Validar Cobertura') {
             steps {
                 script {
-                    // Extraer el porcentaje de cobertura global desde el archivo generado
+                    echo 'Validando cobertura global...'
+                    // Extraer cobertura global directamente del archivo de cobertura generado
                     def coverage = sh(script: "grep -Po 'All files.*\\K\\d+\\.\\d+(?=%)' coverage/lcov-report/index.html", returnStdout: true).trim()
                     echo "Cobertura Global: ${coverage}%"
                     if (coverage.toFloat() < 90) {
@@ -41,6 +39,7 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
+                    echo 'Construyendo imagen Docker...'
                     sh 'docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:latest .'
                 }
             }
@@ -48,6 +47,7 @@ pipeline {
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
+                    echo 'Escaneando vulnerabilidades en la imagen Docker...'
                     sh 'trivy image ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
                 }
             }
@@ -55,6 +55,7 @@ pipeline {
         stage('Publicar Imagen en Docker Hub') {
             steps {
                 script {
+                    echo 'Publicando imagen Docker en Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
                         sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
@@ -75,6 +76,4 @@ pipeline {
         }
     }
 }
-
-
 

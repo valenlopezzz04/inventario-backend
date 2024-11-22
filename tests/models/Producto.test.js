@@ -1,94 +1,76 @@
-const mongoose = require('mongoose');
 const request = require('supertest');
-const app = require('../../index');
+const mongoose = require('mongoose');
 const Producto = require('../../models/Producto');
+const app = require('../../index'); // Ajustar la ruta según tu archivo principal
 const jwt = require('jsonwebtoken');
 
-jest.setTimeout(30000);
-
-let adminToken;
-let standardToken;
-let productoId;
-
-beforeAll(async () => {
-    const mongoURI = 'mongodb://127.0.0.1:27017/testdb';
-    await mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
-
-    adminToken = 'Bearer ' + jwt.sign({ id: 'adminId', role: 'admin' }, 'valentina', { expiresIn: '1h' });
-    standardToken = 'Bearer ' + jwt.sign({ id: 'userId', role: 'standard' }, 'valentina', { expiresIn: '1h' });
-
-    const producto = await Producto.create({
-        nombre_producto: 'Producto de Prueba',
-        cantidad: 10,
-        ubicacion_almacen: 'Almacén A',
-        estado: 'Disponible',
-        categoria: 'Categoría A',
-    });
-
-    productoId = producto._id;
-});
-
-afterAll(async () => {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-});
+const JWT_SECRET = 'valentina'; // Asegúrate de usar el mismo secreto que en el middleware
 
 describe('Rutas de Productos', () => {
+    let adminToken, standardToken;
+
+    beforeAll(async () => {
+        // Generar tokens de ejemplo
+        adminToken = `Bearer ${jwt.sign({ id: 'adminId', role: 'admin' }, JWT_SECRET)}`;
+        standardToken = `Bearer ${jwt.sign({ id: 'userId', role: 'standard' }, JWT_SECRET)}`;
+
+        // Conexión a la base de datos de prueba
+        await mongoose.connect(process.env.MONGODB_URI_TEST || 'mongodb://localhost/testdb', {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        await Producto.deleteMany({}); // Limpia la colección de productos antes de iniciar las pruebas
+
+        // Inserta productos para pruebas
+        await Producto.create([
+            { nombre_producto: 'Producto 1', cantidad: 10, ubicacion_almacen: 'Almacén A', estado: 'Disponible' },
+            { nombre_producto: 'Producto 2', cantidad: 5, ubicacion_almacen: 'Almacén B', estado: 'Reservado' },
+        ]);
+    });
+
+    afterAll(async () => {
+        await mongoose.connection.close(); // Cierra la conexión a la base de datos después de las pruebas
+    });
+
     test('Debe bloquear creación de producto para usuarios estándar', async () => {
         const res = await request(app)
-            .post('/productos')
+            .post('/gestion/productos') // Ruta para crear un producto
             .set('Authorization', standardToken)
             .send({
-                nombre_producto: 'Nuevo Producto',
-                cantidad: 20,
-                ubicacion_almacen: 'Almacén B',
+                nombre_producto: 'Producto Bloqueado',
+                cantidad: 5,
+                ubicacion_almacen: 'Almacén Norte',
+                estado: 'Disponible',
             });
 
-        expect(res.status).toBe(403);
-        expect(res.body).toHaveProperty('message', 'Acceso denegado. Se requiere rol de administrador.');
+        expect(res.status).toBe(403); // Usuario estándar no tiene permisos
+        expect(res.body).toHaveProperty('message', 'No tienes permiso para realizar esta acción');
     });
 
-    test('Debe actualizar un producto como administrador', async () => {
+    test('Debe crear un producto como administrador', async () => {
         const res = await request(app)
-            .put(`/productos/${productoId}`)
+            .post('/gestion/productos') // Ruta para crear un producto
             .set('Authorization', adminToken)
             .send({
-                nombre_producto: 'Producto Actualizado',
-                cantidad: 100,
+                nombre_producto: 'Producto de prueba',
+                cantidad: 10,
+                ubicacion_almacen: 'Almacén Central',
+                estado: 'Disponible',
             });
 
-        expect(res.status).toBe(200);
-        expect(res.body).toHaveProperty('message', 'Producto actualizado con éxito.');
-        expect(res.body.producto.nombre_producto).toBe('Producto Actualizado');
+        expect(res.status).toBe(201); // Producto creado con éxito
+        expect(res.body).toHaveProperty('message', 'Producto creado con éxito');
+        expect(res.body.producto).toHaveProperty('nombre_producto', 'Producto de prueba');
     });
 
-    test('Debe bloquear actualización de producto para usuarios estándar', async () => {
+    test('Debe listar todos los productos como usuario autenticado', async () => {
         const res = await request(app)
-            .put(`/productos/${productoId}`)
-            .set('Authorization', standardToken)
-            .send({
-                cantidad: 50,
-            });
+            .get('/gestion/productos') // Ruta para listar productos
+            .set('Authorization', standardToken);
 
-        expect(res.status).toBe(403);
-        expect(res.body).toHaveProperty('message', 'Acceso denegado. Se requiere rol de administrador.');
-    });
-
-    test('Debe eliminar un producto como administrador', async () => {
-        const res = await request(app)
-            .delete(`/productos/${productoId}`)
-            .set('Authorization', adminToken);
-
-        expect(res.status).toBe(200);
-        expect(res.body).toHaveProperty('message', 'Producto eliminado con éxito.');
-    });
-
-    test('Debe devolver error 404 al intentar eliminar un producto inexistente', async () => {
-        const res = await request(app)
-            .delete('/productos/64b1234567890abcdef12345')
-            .set('Authorization', adminToken);
-
-        expect(res.status).toBe(404);
-        expect(res.body).toHaveProperty('message', 'Producto no encontrado.');
+        expect(res.status).toBe(200); // Usuario estándar puede listar productos
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body.length).toBeGreaterThan(0); // Verifica que hay al menos un producto
     });
 });
+

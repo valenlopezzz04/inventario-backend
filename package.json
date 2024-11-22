@@ -40,7 +40,12 @@
     "functions": 90,
     "branches": 90,
     "statements": 90
-  }
-  
-    }
-  
+  },
+  "nyc": {
+  "all": true,
+  "reporter": ["html", "text-summary"],
+  "include": ["src/**/*.js"],
+  "exclude": ["node_modules", "tests"]
+}
+
+}

@@ -1,8 +1,8 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_USER = 'valenlopezzz04'
-        IMAGE_NAME = 'inventario-jenkins-imagen'
+        DOCKERHUB_USER = 'valenlopezzz04' // Tu usuario de Docker Hub
+        IMAGE_NAME = 'inventario-jenkins-imagen' // Nombre de la imagen
     }
     stages {
         stage('Checkout') {
@@ -27,7 +27,7 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    bat "docker build -t %IMAGE_NAME%:latest ."
+                    bat "docker build -t %DOCKERHUB_USER%/%IMAGE_NAME%:latest ."
                 }
             }
         }
@@ -37,7 +37,7 @@ pipeline {
                     // Escanear y guardar el reporte en un archivo de texto
                     bat """
                     chcp 65001 > nul
-                    docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %IMAGE_NAME%:latest > vulnerabilities-report.txt
+                    docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %DOCKERHUB_USER%/%IMAGE_NAME%:latest > vulnerabilities-report.txt
                     """
                 }
             }
@@ -54,6 +54,19 @@ pipeline {
                 ])
             }
         }
+        stage('Publicar Imagen en Docker Hub') {
+            steps {
+                script {
+                    // Autenticación y push al repositorio de Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        bat """
+                        docker login -u %USERNAME% -p %PASSWORD%
+                        docker push %DOCKERHUB_USER%/%IMAGE_NAME%:latest
+                        """
+                    }
+                }
+            }
+        }
     }
     post {
         always {
@@ -62,11 +75,10 @@ pipeline {
             echo 'Pipeline finalizado. Revisa el reporte de vulnerabilidades y cobertura en el workspace.'
         }
         success {
-            echo 'Pipeline ejecutado con éxito.'
+            echo 'Pipeline ejecutado con éxito. Imagen publicada en Docker Hub.'
         }
         failure {
-            echo 'Pipeline falló. Revisa los errores y el reporte de vulnerabilidades.'
+            echo 'Pipeline falló. Revisa los errores, vulnerabilidades y los logs.'
         }
     }
 }
-

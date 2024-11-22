@@ -8,7 +8,13 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/main']], // Reemplaza 'main' con tu rama
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/valenlopezzz04/inventario-backend.git',
+                        credentialsId: 'github-credentials-id' // Usa el ID de las credenciales
+                    ]]
+                ])
             }
         }
         stage('Instalar Dependencias') {
@@ -21,7 +27,7 @@ pipeline {
         stage('Validar que el componente compila') {
             steps {
                 script {
-                    sh 'npm run build' // Asegúrate de que tengas un script build en tu package.json
+                    sh 'npm run build'
                 }
             }
         }
@@ -31,8 +37,8 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: 'coverage/lcov-report', // Ruta al directorio del reporte
-                    reportFiles: 'index.html', // Archivo HTML que se muestra
+                    reportDir: 'coverage/lcov-report',
+                    reportFiles: 'index.html',
                     reportName: 'Cobertura de Código'
                 ])
             }
@@ -74,6 +80,3 @@ pipeline {
         }
     }
 }
-
-
-

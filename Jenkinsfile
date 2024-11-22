@@ -1,9 +1,9 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
-        DOCKERHUB_USER = 'valenlopezzz04'
-        IMAGE_NAME = 'inventario-backend-imagen'
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // ID de tus credenciales Docker en Jenkins
+        DOCKERHUB_USER = 'valenlopezzz04'              // Tu usuario de DockerHub
+        IMAGE_NAME = 'inventario-backend-imagen'       // Nombre de la imagen
     }
     stages {
         stage('Instalar Dependencias') {
@@ -16,7 +16,24 @@ pipeline {
         stage('Ejecutar Pruebas') {
             steps {
                 script {
-                    sh 'npm test'
+                    // Ejecutar las pruebas con cobertura
+                    sh 'npm test -- --coverage'
+
+                    // Extraer porcentaje de cobertura usando Node.js
+                    def cobertura = sh(script: """
+                        node -e "
+                        const fs = require('fs');
+                        const data = fs.readFileSync('coverage/lcov-report/index.html', 'utf8');
+                        const match = data.match(/All files.*?([0-9]+)%/);
+                        if (match && match[1]) console.log(match[1]);
+                        else process.exit(1);
+                        "
+                    """, returnStdout: true).trim()
+
+                    echo "Cobertura actual: ${cobertura}%"
+                    if (cobertura.toInteger() < 90) {
+                        error "La cobertura es inferior al 90%. Abortando pipeline."
+                    }
                 }
             }
         }
@@ -51,6 +68,13 @@ pipeline {
         }
         success {
             echo 'Pipeline ejecutado con éxito.'
+            publishHTML(target: [
+                allowMissing: false,
+                keepAll: true,
+                reportDir: 'coverage/lcov-report',
+                reportFiles: 'index.html',
+                reportName: 'Reporte de Cobertura'
+            ])
         }
         failure {
             echo 'Pipeline falló. Revisa los errores.'

@@ -34,12 +34,15 @@ pipeline {
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    // Realiza el escaneo y guarda el reporte en un archivo de texto
+                    // Crear la carpeta output
+                    bat 'if not exist output mkdir output'
+
+                    // Escaneo con Trivy y guardar el reporte
                     bat """
                     docker run --rm -v %cd%:/output aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %IMAGE_NAME%:latest > output\\trivy_report.txt
                     """
                     
-                    // Muestra solo las vulnerabilidades críticas y altas en la consola
+                    // Mostrar resumen de vulnerabilidades críticas y altas en la consola
                     echo '--- Resumen del reporte de vulnerabilidades ---'
                     bat 'findstr "CRITICAL HIGH" output\\trivy_report.txt || echo No se encontraron vulnerabilidades relevantes.'
                 }
@@ -51,8 +54,8 @@ pipeline {
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
-                    reportDir: 'coverage/lcov-report', // Ruta al directorio del reporte
-                    reportFiles: 'index.html', // Archivo HTML que se muestra
+                    reportDir: 'coverage/lcov-report',
+                    reportFiles: 'index.html',
                     reportName: 'Cobertura de Código'
                 ])
             }
@@ -61,8 +64,6 @@ pipeline {
     post {
         always {
             echo 'Pipeline finalizado. Revisa el reporte y los logs.'
-
-            // Archiva el reporte de vulnerabilidades
             archiveArtifacts artifacts: 'output/trivy_report.txt', fingerprint: true
         }
         success {
@@ -73,5 +74,3 @@ pipeline {
         }
     }
 }
-
-

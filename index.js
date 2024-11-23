@@ -65,8 +65,10 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Middleware para parsear JSON
 app.use(express.json());
+app.use('/gestion/notificaciones',notificacionesRouter); // Usa el router
 
-app.use('/gestion/notificaciones', notificacionesRouter);
+
+
 
 
 // Conectar a RabbitMQ

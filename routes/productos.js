@@ -51,7 +51,9 @@ router.get('/', authMiddleware, async (req, res) => {
 // Obtener productos con stock insuficiente
 router.get('/stock-insuficiente', authMiddleware, async (req, res) => {
     try {
+        console.log('Consultando productos con cantidad <=', stockMinimo); // Agregar log para depuración
         const productos = await Producto.find({ cantidad: { $lte: stockMinimo } });
+        console.log('Productos encontrados:', productos); // Agregar log para ver el resultado
         res.json(productos);
     } catch (error) {
         console.error('Error al obtener productos con stock insuficiente:', error);

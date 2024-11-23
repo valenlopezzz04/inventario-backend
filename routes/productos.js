@@ -9,7 +9,7 @@ const stockMinimo = 5; // Nivel mínimo de stock
 // Crear un producto - Solo para administradores
 router.post('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
     try {
-        console.log('Datos recibidos en POST:', req.body);
+    
 
         // Convertir cantidad a número si es necesario
         if (req.body.cantidad !== undefined) {
@@ -27,8 +27,7 @@ router.post('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
 
         // Emitir evento si el stock es insuficiente
         if (cantidad <= stockMinimo) {
-            console.log('Emitiendo evento debido: stockInsuficiente', { nombre_producto, cantidad, ubicacion_almacen });
-            eventEmitter.emit('stockInsuficiente', { nombre_producto, cantidad, ubicacion_almacen });
+            eventEmitter.emit('stockInsuficiente', { nombre_producto, cantidad, ubicacion_almacen,estado, fecha_ingreso,categoria });
         }
 
         res.status(201).json({ message: 'Producto creado con éxito', producto });

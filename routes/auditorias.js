@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Auditoria = require('../models/auditoria');
+const Auditoria = require('../models/Auditoria');
 const { authMiddleware, verificarRol } = require('../middlewares/authMiddleware');
 
 // Obtener todos los registros de auditoría

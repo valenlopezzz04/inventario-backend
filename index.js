@@ -8,6 +8,9 @@ const { authMiddleware } = require('./middlewares/authMiddleware');
 const { connectToRabbitMQ } = require('./rabbitmq'); 
 const notificacionesRouter = require('./routes/notificaciones');
 const auditoriasRouter = require('./routes/auditorias');
+const ordenesRouter = require('./routes/ordenes');
+
+
 
 
 
@@ -69,7 +72,7 @@ if (process.env.NODE_ENV !== 'test') {
 app.use(express.json());
 app.use('/gestion/notificaciones',notificacionesRouter); // Usa el router
 app.use('/gestion/auditorias', auditoriasRouter);
-
+app.use('/gestion/ordenes', ordenesRouter);
 
 
 

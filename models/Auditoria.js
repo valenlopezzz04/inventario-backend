@@ -7,5 +7,3 @@ const auditoriaSchema = new mongoose.Schema({
 });
 
 const Auditoria = mongoose.model('Auditoria', auditoriaSchema);
-
-module.exports = Auditoria;

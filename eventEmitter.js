@@ -1,6 +1,6 @@
 const EventEmitter = require('events');
 const Notificacion = require('./models/Notificacion'); // Importa el modelo de notificación
-const Auditoria = require('./models/Auditoria'); // Importa el modelo de auditoría
+const Auditoria = require('./models/auditoria'); // Importa el modelo de auditoría
 const { sendToQueue } = require('./rabbitmq'); // RabbitMQ, si está configurado
 
 // Instancia del EventEmitter

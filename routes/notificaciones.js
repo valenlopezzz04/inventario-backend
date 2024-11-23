@@ -3,45 +3,37 @@ const router = express.Router();
 const Notificacion = require('../models/Notificacion');
 const { authMiddleware, verificarRol } = require('../middlewares/authMiddleware');
 
-// Middleware para proteger las rutas
-router.use(authMiddleware, verificarRol(['admin']));
-
-// Obtener todas las notificaciones (opcional, para listar en el dashboard)
-router.get('/', async (req, res) => {
+// Obtener todas las notificaciones no leídas
+router.get('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
     try {
-        const notificaciones = await Notificacion.find().sort({ fecha: -1 }); // Ordenar por fecha descendente
+        const notificaciones = await Notificacion.find({ leida: false });
         res.json(notificaciones);
     } catch (error) {
         console.error('Error al obtener notificaciones:', error);
-        res.status(500).json({ message: 'Error al obtener notificaciones', error: error.message });
+        res.status(500).json({ message: 'Error al obtener notificaciones' });
     }
 });
 
-// Endpoint para marcar una notificación como leída
-router.put('/leida/:id', async (req, res) => {
+// Marcar notificaciones como leídas
+router.put('/leidas', authMiddleware, verificarRol(['admin']), async (req, res) => {
     try {
-        const { id } = req.params;
+        const { notificaciones } = req.body; // Array de IDs de notificaciones
 
-        // Verifica si el ID es válido
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({ message: 'ID inválido' });
+        if (!Array.isArray(notificaciones)) {
+            return res.status(400).json({ message: 'Debe proporcionar un array de IDs de notificaciones' });
         }
 
-        const notificacion = await Notificacion.findByIdAndUpdate(
-            id,
-            { leida: true },
-            { new: true }
+        await Notificacion.updateMany(
+            { _id: { $in: notificaciones } },
+            { $set: { leida: true } }
         );
 
-        if (!notificacion) {
-            return res.status(404).json({ message: 'Notificación no encontrada' });
-        }
-
-        res.json({ message: 'Notificación marcada como leída', notificacion });
+        res.json({ message: 'Notificaciones marcadas como leídas' });
     } catch (error) {
         console.error('Error al actualizar notificación:', error);
-        res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+        res.status(500).json({ message: 'Error al actualizar notificación', error: error.message });
     }
 });
 
 module.exports = router;
+

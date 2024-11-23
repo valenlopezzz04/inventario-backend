@@ -3,7 +3,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'valenlopezzz04' // Tu usuario de Docker Hub
         IMAGE_NAME = 'inventario-jenkins-imagen' // Nombre de la imagen
-        SONAR_TOKEN = credentials('sonar-token') // Token de SonarQube almacenado en Jenkins
+        SONAR_TOKEN = credentials('sonarqube-token') // Token de SonarQube almacenado en Jenkins
     }
     stages {
         stage('Checkout') {
@@ -89,7 +89,9 @@ pipeline {
     }
     post {
         always {
-            archiveArtifacts artifacts: 'vulnerabilities-report.txt', fingerprint: true
+            script {
+                archiveArtifacts artifacts: 'vulnerabilities-report.txt', fingerprint: true
+            }
             echo 'Pipeline finalizado. Revisa el reporte de vulnerabilidades y cobertura en el workspace.'
         }
         success {

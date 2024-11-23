@@ -1,9 +1,8 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_USER = 'valenlopezzz04' // Tu usuario de Docker Hub
-        IMAGE_NAME = 'inventario-jenkins-imagen' // Nombre de la imagen de Docker
-        SONAR_TOKEN = credentials('sonarqube-token') // ID de la credencial del token de SonarQube
+        DOCKERHUB_USER = 'valenlopezzz04' // Usuario de Docker Hub
+        IMAGE_NAME = 'inventario-jenkins-imagen' // Nombre de la imagen
     }
     stages {
         stage('Checkout') {
@@ -25,21 +24,22 @@ pipeline {
                 }
             }
         }
-       
         stage('Análisis con SonarQube') {
             steps {
                 script {
-                    withSonarQubeEnv('SonarQube-Server') { // El nombre debe coincidir con el configurado en Jenkins
-                        bat """
-                        docker run --rm \
-                            -v ${env.WORKSPACE}:/usr/src \
+                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('SonarQube-Server') {
+                            bat """
+                            docker run --rm \
+                            -v %WORKSPACE%:/usr/src \
                             sonarsource/sonar-scanner-cli \
                             sonar-scanner \
                             -Dsonar.projectKey=inventario-backend \
                             -Dsonar.sources=/usr/src \
                             -Dsonar.host.url=http://localhost:9000 \
                             -Dsonar.login=${env.SONAR_TOKEN}
-                        """
+                            """
+                        }
                     }
                 }
             }
@@ -55,7 +55,13 @@ pipeline {
                 }
             }
         }
-        
+        stage('Construir Imagen Docker') {
+            steps {
+                script {
+                    bat "docker build -t %DOCKERHUB_USER%/%IMAGE_NAME%:latest ."
+                }
+            }
+        }
         stage('Publicar Cobertura HTML') {
             steps {
                 publishHTML(target: [
@@ -68,18 +74,9 @@ pipeline {
                 ])
             }
         }
-
-         stage('Construir Imagen Docker') {
-            steps {
-                script {
-                    bat "docker build -t %DOCKERHUB_USER%/%IMAGE_NAME%:latest ."
-                }
-            }
-        }
         stage('Publicar Imagen en Docker Hub') {
             steps {
                 script {
-                    // Autenticación y push al repositorio de Docker Hub
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         bat """
                         docker login -u %USERNAME% -p %PASSWORD%
@@ -104,3 +101,4 @@ pipeline {
         }
     }
 }
+

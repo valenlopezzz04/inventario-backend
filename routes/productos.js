@@ -24,15 +24,15 @@ router.post('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
         const producto = new Producto(req.body);
         await producto.save();
 
-        // Emitir evento si el stock es insuficiente
-        if (cantidad <= 5) { // Nivel mínimo fijo o configurable
+        if (producto.cantidad <= 5) {
             eventEmitter.emit('stockInsuficiente', {
                 producto_id: producto._id,
                 nombre_producto: producto.nombre_producto,
                 cantidad: producto.cantidad,
                 ubicacion_almacen: producto.ubicacion_almacen,
-                nivel_minimo: 5, // Nivel mínimo predeterminado
-                fecha: new Date(),
+                nivel_minimo: producto.nivel_minimo,
+                habilitarReposicion: producto.habilitarReposicion,
+                cantidad_reposicion: producto.cantidad_reposicion,
             });
         }
 
@@ -48,13 +48,14 @@ router.post('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
 router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => {
     try {
         console.log('Datos recibidos en PUT:', req.body);
+       
 
         // Convertir cantidad a número si es necesario
         if (req.body.cantidad !== undefined) {
             req.body.cantidad = parseInt(req.body.cantidad, 10);
         }
 
-        const producto = await Producto.findById(req.params.id);
+        const producto = await Producto.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!producto) {
             return res.status(404).json({ message: 'Producto no encontrado para actualizar' });
         }
@@ -63,16 +64,17 @@ router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => 
         const productoActualizado = await Producto.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
         // Verificar si el stock actualizado está por debajo del nivel mínimo
-        if (req.body.cantidad <= 5) {
-            // Emitir evento si el stock está por debajo del nivel mínimo
+        if (producto.cantidad <= producto.nivel_minimo) {
             eventEmitter.emit('stockInsuficiente', {
-                producto_id: productoActualizado._id,
-                nombre_producto: productoActualizado.nombre_producto,
-                cantidad: req.body.cantidad,
-                ubicacion_almacen: productoActualizado.ubicacion_almacen,
-                nivel_minimo: productoActualizado.nivel_minimo || 5,
-                fecha: new Date(),
+                producto_id: producto._id,
+                nombre_producto: producto.nombre_producto,
+                cantidad: producto.cantidad,
+                ubicacion_almacen: producto.ubicacion_almacen,
+                nivel_minimo: producto.nivel_minimo,
+                habilitarReposicion: producto.habilitarReposicion,
+                cantidad_reposicion: producto.cantidad_reposicion,
             });
+        
 
             console.log(`Evento "stockInsuficiente" emitido para el producto ${productoActualizado.nombre_producto}`);
         } else {

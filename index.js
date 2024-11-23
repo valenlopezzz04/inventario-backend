@@ -7,6 +7,7 @@ const productosRouter = require('./routes/productos');
 const { authMiddleware } = require('./middlewares/authMiddleware');
 const { connectToRabbitMQ } = require('./rabbitmq'); 
 const notificacionesRouter = require('./routes/notificaciones');
+const auditoriasRouter = require('./routes/auditorias');
 
 
 

@@ -2,7 +2,8 @@ pipeline {
     agent any
     environment {
         DOCKERHUB_USER = 'valenlopezzz04' // Tu usuario de Docker Hub
-        IMAGE_NAME = 'inventario-jenkins-imagen' // Nombre de la imagen
+        IMAGE_NAME = 'inventario-jenkins-imagen' // Nombre de la imagen de Docker
+        SONAR_TOKEN = credentials('sonarqube-token') // ID de la credencial del token de SonarQube
     }
     stages {
         stage('Checkout') {
@@ -24,29 +25,25 @@ pipeline {
                 }
             }
         }
-        stage('Construir Imagen Docker') {
+       
+        stage('Análisis con SonarQube') {
             steps {
                 script {
-                    bat "docker build -t %DOCKERHUB_USER%/%IMAGE_NAME%:latest ."
+                    withSonarQubeEnv('SonarQube-Server') { // El nombre debe coincidir con el configurado en Jenkins
+                        sh """
+                        docker run --rm \
+                            -v ${env.WORKSPACE}:/usr/src \
+                            sonarsource/sonar-scanner-cli \
+                            sonar-scanner \
+                            -Dsonar.projectKey=inventario-backend \
+                            -Dsonar.sources=/usr/src \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=${env.SONAR_TOKEN}
+                        """
+                    }
                 }
             }
         }
-        stage('Análisis con SonarQube') {
-    steps {
-        script {
-            withSonarQubeEnv('SonarQube-Server') { // El nombre debe coincidir con el configurado en Jenkins
-                bat """
-                sonar-scanner \
-                -Dsonar.projectKey=inventario-backend \
-                -Dsonar.sources=. \
-                -Dsonar.host.url=http://localhost:9000 \
-                -Dsonar.login=squ_102cffedfeee2b0269139db8cbf8f046ae518955
-                """
-            }
-        }
-    }
-}
-
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
@@ -58,6 +55,7 @@ pipeline {
                 }
             }
         }
+        
         stage('Publicar Cobertura HTML') {
             steps {
                 publishHTML(target: [
@@ -68,6 +66,14 @@ pipeline {
                     reportFiles: 'index.html', // Archivo HTML que se muestra
                     reportName: 'Cobertura de Código'
                 ])
+            }
+        }
+
+         stage('Construir Imagen Docker') {
+            steps {
+                script {
+                    bat "docker build -t %DOCKERHUB_USER%/%IMAGE_NAME%:latest ."
+                }
             }
         }
         stage('Publicar Imagen en Docker Hub') {

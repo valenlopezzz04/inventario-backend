@@ -5,7 +5,10 @@ const dotenv = require('dotenv');
 const authRouter = require('./routes/auth');
 const productosRouter = require('./routes/productos');
 const { authMiddleware } = require('./middlewares/authMiddleware');
-const { connectToRabbitMQ } = require('./rabbitmq'); // Importar la conexión a RabbitMQ
+const { connectToRabbitMQ } = require('./rabbitmq'); 
+const notificacionesRouter = require('./routes/notificaciones');
+
+
 
 dotenv.config();
 
@@ -62,6 +65,9 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Middleware para parsear JSON
 app.use(express.json());
+
+app.use('/gestion/notificaciones', notificacionesRouter);
+
 
 // Conectar a RabbitMQ
 connectToRabbitMQ()

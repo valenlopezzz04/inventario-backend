@@ -10,7 +10,7 @@ router.get('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
         res.json(notificaciones);
     } catch (error) {
         console.error('Error al obtener notificaciones:', error);
-        res.status(500).json({ message: 'Error al obtener notificaciones' });
+        res.status(500).json({ message: 'Error al obtener notificaciones', error: error.message });
     }
 });
 

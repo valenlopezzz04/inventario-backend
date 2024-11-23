@@ -59,10 +59,12 @@ router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => 
             return res.status(404).json({ message: 'Producto no encontrado para actualizar' });
         }
 
+        // Actualizar el producto en la base de datos
         const productoActualizado = await Producto.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
-        // Emitir evento si el stock actualizado es insuficiente
+        // Verificar si el stock actualizado está por debajo del nivel mínimo
         if (req.body.cantidad <= productoActualizado.nivel_minimo) {
+            // Emitir evento si el stock está por debajo del nivel mínimo
             eventEmitter.emit('stockInsuficiente', {
                 producto_id: productoActualizado._id,
                 nombre_producto: productoActualizado.nombre_producto,
@@ -71,9 +73,11 @@ router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => 
                 nivel_minimo: productoActualizado.nivel_minimo || 5,
                 fecha: new Date(),
             });
+
+            console.log(`Evento "stockInsuficiente" emitido para el producto ${productoActualizado.nombre_producto}`);
         } else {
-            // Eliminar notificaciones si el stock supera el nivel mínimo
-            await Notificacion.deleteMany({ productoId: productoActualizado._id });
+            // Eliminar notificaciones relacionadas si el stock supera el nivel mínimo
+            await Notificacion.deleteMany({ productoId: req.params.id });
             console.log('Notificaciones relacionadas eliminadas.');
         }
 
@@ -83,6 +87,7 @@ router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => 
         res.status(500).json({ message: 'Error al actualizar producto', error: error.message });
     }
 });
+
 
 // Obtener todos los productos - Acceso para todos los usuarios
 router.get('/', authMiddleware, async (req, res) => {

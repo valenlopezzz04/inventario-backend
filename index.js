@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const authRouter = require('./routes/auth');
 const productosRouter = require('./routes/productos');
 const { authMiddleware } = require('./middlewares/authMiddleware');
+const { connectToRabbitMQ } = require('./rabbitmq'); // Importar la conexión a RabbitMQ
 
 dotenv.config();
 
@@ -57,11 +58,20 @@ if (process.env.NODE_ENV !== 'test') {
         console.error('Error conectando a MongoDB Atlas:', error);
         process.exit(1);
     });
-    
 }
 
 // Middleware para parsear JSON
 app.use(express.json());
+
+// Conectar a RabbitMQ
+connectToRabbitMQ()
+    .then(() => {
+        console.log('Conexión a RabbitMQ exitosa');
+    })
+    .catch((error) => {
+        console.error('Error al conectar con RabbitMQ:', error);
+        process.exit(1);
+    });
 
 // Rutas
 app.use('/auth', authRouter); // Rutas de autenticación

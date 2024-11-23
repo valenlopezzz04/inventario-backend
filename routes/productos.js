@@ -63,7 +63,7 @@ router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => 
         const productoActualizado = await Producto.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
         // Verificar si el stock actualizado está por debajo del nivel mínimo
-        if (req.body.cantidad <= productoActualizado.nivel_minimo) {
+        if (req.body.cantidad <= 5) {
             // Emitir evento si el stock está por debajo del nivel mínimo
             eventEmitter.emit('stockInsuficiente', {
                 producto_id: productoActualizado._id,

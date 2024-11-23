@@ -15,25 +15,20 @@ router.get('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
 });
 
 // Marcar notificaciones como leídas
-router.put('/leidas', authMiddleware, verificarRol(['admin']), async (req, res) => {
+// Eliminar una notificación
+router.delete('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => {
     try {
-        const { notificaciones } = req.body; // Array de IDs de notificaciones
-
-        if (!Array.isArray(notificaciones)) {
-            return res.status(400).json({ message: 'Debe proporcionar un array de IDs de notificaciones' });
+        const notificacion = await Notificacion.findByIdAndDelete(req.params.id);
+        if (!notificacion) {
+            return res.status(404).json({ message: 'Notificación no encontrada' });
         }
-
-        await Notificacion.updateMany(
-            { _id: { $in: notificaciones } },
-            { $set: { leida: true } }
-        );
-
-        res.json({ message: 'Notificaciones marcadas como leídas' });
+        res.json({ message: 'Notificación eliminada con éxito', notificacion });
     } catch (error) {
-        console.error('Error al actualizar notificación:', error);
-        res.status(500).json({ message: 'Error al actualizar notificación', error: error.message });
+        console.error('Error al eliminar notificación:', error);
+        res.status(500).json({ message: 'Error al eliminar notificación', error: error.message });
     }
 });
+
 
 module.exports = router;
 

@@ -37,6 +37,7 @@ pipeline {
                         -Dsonar.projectKey=inventario-backend \
                         -Dsonar.sources=/usr/src \
                         -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.javascript.lcov.reportPaths=/usr/src/coverage/lcov.info\
                         -Dsonar.login=${env.SONAR_TOKEN}
                         """
                     }

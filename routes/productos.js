@@ -27,7 +27,7 @@ router.post('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
 
         // Emitir evento si el stock es insuficiente
         if (cantidad <= stockMinimo) {
-            console.log('Emitiendo evento: stockInsuficiente', { nombre_producto, cantidad, ubicacion_almacen });
+            console.log('Emitiendo evento debido: stockInsuficiente', { nombre_producto, cantidad, ubicacion_almacen });
             eventEmitter.emit('stockInsuficiente', { nombre_producto, cantidad, ubicacion_almacen });
         }
 

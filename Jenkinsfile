@@ -1,8 +1,9 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_USER = 'valenlopezzz04' // Usuario de Docker Hub
+        DOCKERHUB_USER = 'valenlopezzz04' // Tu usuario de Docker Hub
         IMAGE_NAME = 'inventario-jenkins-imagen' // Nombre de la imagen
+        SONAR_TOKEN = credentials('sonar-token') // Token de SonarQube almacenado en Jenkins
     }
     stages {
         stage('Checkout') {
@@ -27,19 +28,17 @@ pipeline {
         stage('Análisis con SonarQube') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                        withSonarQubeEnv('SonarQube-Server') {
-                            bat """
-                            docker run --rm \
-                            -v %WORKSPACE%:/usr/src \
-                            sonarsource/sonar-scanner-cli \
-                            sonar-scanner \
-                            -Dsonar.projectKey=inventario-backend \
-                            -Dsonar.sources=/usr/src \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.login=${env.SONAR_TOKEN}
-                            """
-                        }
+                    withSonarQubeEnv('SonarQube-Server') {
+                        bat """
+                        docker run --rm --network sonarqube-network \
+                        -v %WORKSPACE%:/usr/src \
+                        sonarsource/sonar-scanner-cli \
+                        sonar-scanner \
+                        -Dsonar.projectKey=inventario-backend \
+                        -Dsonar.sources=/usr/src \
+                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.login=${env.SONAR_TOKEN}
+                        """
                     }
                 }
             }
@@ -47,10 +46,11 @@ pipeline {
         stage('Escanear Vulnerabilidades (Trivy)') {
             steps {
                 script {
-                    // Escanear y guardar el reporte en un archivo de texto
                     bat """
                     chcp 65001 > nul
-                    docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress %DOCKERHUB_USER%/%IMAGE_NAME%:latest > vulnerabilities-report.txt
+                    docker run --rm -v //var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:latest image --severity HIGH,CRITICAL --no-progress \
+                    %DOCKERHUB_USER%/%IMAGE_NAME%:latest > vulnerabilities-report.txt
                     """
                 }
             }
@@ -89,7 +89,6 @@ pipeline {
     }
     post {
         always {
-            // Archivar el reporte de vulnerabilidades
             archiveArtifacts artifacts: 'vulnerabilities-report.txt', fingerprint: true
             echo 'Pipeline finalizado. Revisa el reporte de vulnerabilidades y cobertura en el workspace.'
         }

@@ -6,4 +6,4 @@ const auditoriaSchema = new mongoose.Schema({
     fecha: { type: Date, default: Date.now },    // Fecha del evento
 });
 
-module.exports = mongoose.model('Auditoria', auditoriaSchema);
+module.exports = mongoose.model('auditoria', auditoriaSchema);

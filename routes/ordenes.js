@@ -14,4 +14,26 @@ router.get('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
     }
 });
 
+// Actualizar una orden
+router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => {
+    try {
+        const ordenId = req.params.id;
+        const { estado } = req.body;
+
+        const ordenActualizada = await Orden.findByIdAndUpdate(
+            ordenId,
+            { estado },
+            { new: true }
+        );
+
+        if (!ordenActualizada) {
+            return res.status(404).json({ message: 'Orden no encontrada' });
+        }
+
+        res.json({ message: 'Orden actualizada con éxito', orden: ordenActualizada });
+    } catch (error) {
+        console.error('Error al actualizar orden:', error);
+        res.status(500).json({ message: 'Error al actualizar la orden', error: error.message });
+    }
+});
 module.exports = router;

@@ -47,12 +47,18 @@ app.options('*', (req, res) => {
 });
 
 // Conexión a MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://<usuario>:<contraseña>@<cluster>', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-    .then(() => console.log("Conectado a MongoDB"))
-    .catch((error) => console.error("Error conectando a MongoDB:", error));
+if (process.env.NODE_ENV !== 'test') {
+    mongoose.connect('mongodb+srv://valejalopez444:valentina@gestioninventario.o72zu.mongodb.net/GestionInventario?retryWrites=true&w=majority', {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => console.log('Conectado a MongoDB Atlas'))
+    .catch((error) => {
+        console.error('Error conectando a MongoDB Atlas:', error);
+        process.exit(1);
+    });
+    
+}
 
 // Middleware para parsear JSON
 app.use(express.json());

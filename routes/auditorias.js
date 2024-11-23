@@ -10,7 +10,7 @@ router.get('/', authMiddleware, verificarRol(['admin']), async (req, res) => {
         res.json(registros);
     } catch (error) {
         console.error('Error al obtener registros de auditoría:', error);
-        res.status(500).json({ message: 'Error al obtener registros de auditoría', error: error.message });
+        res.status(500).json({ message: 'Error al obtener registros de la auditoría', error: error.message });
     }
 });
 

@@ -8,7 +8,7 @@ const eventEmitter = new EventEmitter();
 
 // Evento para manejar "stockInsuficiente"
 eventEmitter.on('stockInsuficiente', async (data) => {
-    console.log('Evento recibido: stock insuficiente');
+    console.log('stock insuficiente');
     console.log('Detalles del producto:', data);
 
     try {

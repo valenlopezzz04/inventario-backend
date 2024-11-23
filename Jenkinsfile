@@ -30,7 +30,7 @@ pipeline {
             steps {
                 script {
                     withSonarQubeEnv('SonarQube-Server') { // El nombre debe coincidir con el configurado en Jenkins
-                        sh """
+                        bat """
                         docker run --rm \
                             -v ${env.WORKSPACE}:/usr/src \
                             sonarsource/sonar-scanner-cli \

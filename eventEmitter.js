@@ -1,6 +1,7 @@
 const EventEmitter = require('events');
 const Notificacion = require('./models/Notificacion');
-const Orden = require('./models/Orden'); // Modelo de orden
+const Orden = require('./models/Orden');
+const Auditoria = require('./models/Auditoria');
 const { sendToQueue } = require('./rabbitmq');
 
 // Instancia del EventEmitter
@@ -12,7 +13,7 @@ eventEmitter.on('stockInsuficiente', async (data) => {
     console.log('Detalles del producto:', data);
 
     try {
-        // Crear una notificación
+        // 1. Notificación al equipo de abastecimiento
         const notificacion = new Notificacion({
             productoId: data.producto_id,
             nombre_producto: data.nombre_producto,
@@ -25,13 +26,13 @@ eventEmitter.on('stockInsuficiente', async (data) => {
         await notificacion.save();
         console.log('Notificación guardada correctamente:', notificacion);
 
-        // Crear una orden de reposición si está habilitada
+        // 2. Activación de una orden automática de reposición
         if (data.habilitarReposicion) {
             const nuevaOrden = new Orden({
                 productoId: data.producto_id,
                 nombre_producto: data.nombre_producto,
                 cantidad_actual: data.cantidad,
-                cantidad_reposicion: data.cantidad_reposicion,
+                cantidad_reposicion: data.cantidad_reposicion || 10, // Cantidad predeterminada de reposición
                 estado: 'Pendiente',
                 fecha: new Date(),
             });
@@ -39,6 +40,21 @@ eventEmitter.on('stockInsuficiente', async (data) => {
             await nuevaOrden.save();
             console.log('Orden de reposición creada:', nuevaOrden);
         }
+
+        // 3. Registro en el sistema de auditoría
+        const auditoria = new Auditoria({
+            tipoEvento: 'stockInsuficiente',
+            detalles: {
+                producto: data.nombre_producto,
+                cantidad: data.cantidad,
+                nivelMinimo: data.nivel_minimo,
+                habilitarReposicion: data.habilitarReposicion,
+            },
+            fecha: new Date(),
+        });
+
+        await auditoria.save();
+        console.log('Evento registrado en la auditoría:', auditoria);
 
         // Opcional: Enviar datos a RabbitMQ
         if (sendToQueue) {
@@ -51,3 +67,5 @@ eventEmitter.on('stockInsuficiente', async (data) => {
 });
 
 module.exports = eventEmitter;
+
+

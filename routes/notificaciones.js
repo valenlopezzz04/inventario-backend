@@ -30,5 +30,5 @@ router.delete('/:id', authMiddleware, verificarRol(['admin']), async (req, res) 
 });
 
 
-module.exports = router;
+
 

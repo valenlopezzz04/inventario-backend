@@ -36,4 +36,24 @@ router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => 
         res.status(500).json({ message: 'Error al actualizar la orden', error: error.message });
     }
 });
+
+// Eliminar una orden
+router.delete('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => {
+    try {
+        const ordenId = req.params.id;
+
+        const ordenEliminada = await Orden.findByIdAndDelete(ordenId);
+
+        if (!ordenEliminada) {
+            return res.status(404).json({ message: 'Orden no encontrada' });
+        }
+
+        res.json({ message: 'Orden eliminada con éxito', orden: ordenEliminada });
+    } catch (error) {
+        console.error('Error al eliminar orden:', error);
+        res.status(500).json({ message: 'Error al eliminar la orden', error: error.message });
+    }
+});
+
 module.exports = router;
+

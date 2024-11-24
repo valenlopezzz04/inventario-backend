@@ -92,7 +92,7 @@ router.put('/:id', authMiddleware, verificarRol(['admin']), async (req, res) => 
 
 
 // Obtener todos los productos - Acceso para todos los usuarios
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const productos = await Producto.find();
         res.json(productos);
